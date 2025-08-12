@@ -132,6 +132,7 @@ from tqdm import tqdm
 
 
 def get_vocab(tokenized_corpus):
+    
     id2word = corpora.Dictionary(tokenized_corpus)
     return id2word
 
