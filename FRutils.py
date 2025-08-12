@@ -130,6 +130,12 @@ def multilineplot(df, colnames=None, xlab='index', ylab='series', title=''):
 import gensim.corpora as corpora
 from tqdm import tqdm
 
+
+def get_vocab(tokenized_corpus):
+    id2word = corpora.Dictionary(tokenized_corpus)
+    return id2word
+
+
 def build_dtm(tokenized_corpus, id2word = None):
     """
     converts a tokenized corpus to a DOcument Term Matrix. id2word is a gensim dictionary.
@@ -147,7 +153,7 @@ def build_dtm(tokenized_corpus, id2word = None):
         for id, count in doc:
             DTM[i,id] = count
 
-    return DTM, id2word
+    return DTM
 
 
 def dtm_to_bow(dtm):
@@ -170,9 +176,6 @@ def corpus_to_bow(corpus, id2word=None):
         id2word = corpora.Dictionary(corpus)
     bow = [id2word.doc2bow(document) for document in corpus]
     return bow
-
-
-
 
 
 
