@@ -98,6 +98,20 @@ class RSM(object):
         # probs = self.softmax(energy.T)
         # return probs
 
+    def topic_words(self, topk, id2word=None):
+        w_vh, w_v, w_h = self.W
+        T = self.hidden
+        if id2word==None:
+            id2word = self.id2word
+        words = np.array([k for k in id2word.token2id.keys()])
+
+        toplist = []
+        for t in range(T):
+            topw = w_vh[: , t]
+            bestwords = words[np.argsort(topw)[::-1]][0:topk]
+            toplist.append(bestwords)
+
+        return toplist
 
 
 ################# sampling
@@ -275,16 +289,28 @@ class RSM(object):
                     next_monitor = t + epochs_per_monitor
 
                     self.train_loglik[t] = np.mean(self.neg_free_energy0(dtm))
-                    self.train_ppl[t] = self.approx_ppl(dtm)
+                    self.train_ppl[t] = self.log_ppl_upo(dtm)
 
                     if doval:
                         self.val_loglik[t] = np.mean(self.neg_free_energy0(val_dtm))
-                        self.val_ppl[t] = self.approx_ppl(val_dtm)
+                        self.val_ppl[t] = self.log_ppl_upo(val_dtm)
 
 
 
 
 ############ perplexity and probability
+
+
+    def log_ppl_upbo(self, dtm):
+        """
+        return the log perplepxity upper bound 
+        given a document term matrix
+        """
+        mfh = self.visible2hidden0(dtm)
+        vprob = self.hidden2visible0(mfh)
+        lpub = np.exp(-np.nansum(np.log(vprob)*dtm)/np.sum(dtm))
+        return lpub
+
 
 
     def approx_ppl(self, testmatrix):
@@ -304,6 +330,7 @@ class RSM(object):
         s = np.sum(D)
         ppl = np.exp(- z / s)
         return ppl
+
 
 
     def approx_prob(self, dtm):
