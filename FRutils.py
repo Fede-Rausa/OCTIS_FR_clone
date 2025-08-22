@@ -43,11 +43,23 @@ def unlist(LIST):
 
 def softmax_vec(array):
     exparr = np.exp(array)
-    return exparr/exparr.sum()
+    probs = exparr/exparr.sum()
+    return probs
+
+def strong_softmax_vec(array):
+    maxs = np.max(array)
+    lse = maxs + np.log(np.sum(np.exp(array - maxs)))
+    probs = np.exp(array - lse)
+    return probs
 
 def softmax_mat(array):
     exparr = np.exp(array)
     return exparr/exparr.sum(axis=1)
+
+def strong_softmax_mat(array):
+    maxs = np.max(array, axis=1, keepdims=True)
+    lse = maxs + np.log(np.sum(np.exp(array - maxs), axis=1, keepdims=True))
+    return np.exp(array - lse)
 
 def sigmoid(x):
     return (1/(1+np.exp(-x)))
@@ -64,6 +76,13 @@ def summary(vec):
         'q75%' : np.round(np.quantile(vec, 0.75),2),
         'max' : np.round(np.max(vec), 2)
     }
+
+
+
+############ plot numpy arrays
+
+import pandas as pd
+import seaborn as sns
 
 
 def hist(vec, xlab='x'):
@@ -84,9 +103,6 @@ def regscatter(x, y, xlab='x', ylab='y',
                      fit_reg=True, color = color,
                      order=order, lowess=lowess, ci=ci)
     return pl
-
-
-
 
 
 def plotline(y,x=None, xlab='x', ylab='y', title=''):
@@ -119,7 +135,68 @@ def multilineplot(df, colnames=None, xlab='index', ylab='series', title=''):
 
 
 
-class linreg(object):
+
+##################### NLP functions
+
+import gensim.corpora as corpora
+from tqdm import tqdm
+
+
+def get_vocab(tokenized_corpus):
+    
+    id2word = corpora.Dictionary(tokenized_corpus)
+    return id2word
+
+
+def build_dtm(tokenized_corpus, id2word = None):
+    """
+    converts a tokenized corpus to a DOcument Term Matrix. id2word is a gensim dictionary.
+    """
+    if (id2word == None):
+        id2word = corpora.Dictionary(tokenized_corpus)
+    else:
+        id2word = id2word
+    id_corpus = [id2word.doc2bow(document) for document in tokenized_corpus]
+    vocab = id2word.token2id
+    N = len(id_corpus)
+    DTM = np.zeros((N, len(vocab)))
+    for i in tqdm(range(N)):
+        doc = id_corpus[i]
+        for id, count in doc:
+            DTM[i,id] = count
+
+    return DTM
+
+
+def dtm_to_bow(dtm):
+    """
+    Convert a DTM to BoW format
+    """
+    bows = []
+    for row in dtm:
+        bow = [(i, int(count)) for i, count in enumerate(row) if count > 0]
+        bows.append(bow)
+    return bows
+
+
+def corpus_to_bow(corpus, id2word=None):
+    """
+    Convert a tokenized corpus to BoW format
+    id2word is a gensim dictionary
+    """
+    if (id2word==None):
+        id2word = corpora.Dictionary(corpus)
+    bow = [id2word.doc2bow(document) for document in corpus]
+    return bow
+
+
+
+
+
+
+######### linear regression models
+
+class ols(object):
 
     def train(self, x, y, intercept=True, w=None):
         self.intercept = intercept
@@ -207,7 +284,7 @@ class linreg(object):
 
 
 
-class wlinreg(object):
+class wls(object):
 
     def train(self, x, y, intercept=True, w=None):
         self.intercept = intercept
